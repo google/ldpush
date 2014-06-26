@@ -122,7 +122,6 @@ class PushThread(threading.Thread):
       # This is a workaround. The base_device.BaseDevice class requires
       # loopback_ipv4 for ultimately passing on to sshclient.Connect - yet this
       # can be a hostname that resolves to a AAAA, kooky I know.
-      # TODO(ryanshea): open bug for this.
       device = self._vendor_class(host=target, loopback_ipv4=target)
 
       # Connect.
