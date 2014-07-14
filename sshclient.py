@@ -29,6 +29,11 @@ gflags.DEFINE_string('paramiko_ssh_config',
                      'Use this file to pass options using the same format as '
                      'OpenSSH.')
 
+gflags.DEFINE_boolean('use_ssh_agent',
+                      False,
+                      'Use a local ssh-agent to get key material for '
+                      'authentication attempts.')
+
 FLAGS = gflags.FLAGS
 
 TIMEOUT_DEFAULT = 20.0
@@ -231,7 +236,7 @@ def Connect(hostname, username, password=None, port=22, ssh_keys=(),
                            password=password,
                            pkey=pkey,
                            timeout=timeout,
-                           allow_agent=False,
+                           allow_agent=FLAGS.use_ssh_agent,
                            look_for_keys=False)
         break
       except (paramiko.AuthenticationException, paramiko.SSHException) as e:
