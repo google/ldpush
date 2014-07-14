@@ -235,7 +235,10 @@ class BaseDevice(object):
         neither a password nor an SSH private key was supplied.
     """
     # Either an SSH key or password must be supplied for authentication.
-    if password is None and not ssh_keys and not ssl_cert_set:
+    if (password is None and not
+        ssh_keys and not
+        ssl_cert_set and not
+        FLAGS.use_ssh_agent):
       raise exceptions.AuthenticationError(
           'Cannot connect. No authentication information provided to device '
           'Connect method.')

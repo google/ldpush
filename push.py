@@ -240,7 +240,11 @@ def main(argv):
       # config to set.
       task_queue.put((device + FLAGS.suffix, FLAGS.command or JoinFiles(files)))
 
-  passw = getpass.getpass('Password:')
+  # A password is only necessary if the ssh-agent is not to be used.
+  if not FLAGS.use_ssh_agent:
+    passw = getpass.getpass('Password:')
+  else:
+    passw = None
 
   threads = []
   for _ in xrange(FLAGS.threads):
