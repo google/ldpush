@@ -378,7 +378,6 @@ class JunosDevice(paramiko_device.ParamikoDevice):
         operation = 'patch'
       else:
         result.transcript = 'SetConfig uploaded the file successfully.'
-        print "### hi there"
         return result
       if canary:
         logging.debug('Canary syntax checking configuration file %r.',
@@ -389,12 +388,10 @@ class JunosDevice(paramiko_device.ParamikoDevice):
       else:
         logging.debug('Setting destination %r with configuration file %r.',
                       destination_file, file_name)
-        print "### LOADING CONFIGURATION"
         result = self._JunosLoad(operation, file_name,
                                  skip_show_compare=skip_show_compare,
                                  skip_commit_check=skip_commit_check,
                                  rollback_patch=rollback_patch)
-        print "### ", result
 
         if rollback_patch:
           try:
