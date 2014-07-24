@@ -79,10 +79,11 @@ class IosDevice(base_device.BaseDevice):
 
   def _Connect(self, username, password=None, ssh_keys=None,
                enable_password=None, ssl_cert_set=None):
-    _ = enable_password, ssl_cert_set
+    _ = ssl_cert_set
     self._connection = pexpect_connection.ParamikoSshConnection(
         self.loopback_ipv4, username, password, self._success,
-        timeout=self.timeout_connect, find_prompt=True, ssh_keys=ssh_keys)
+        timeout=self.timeout_connect, find_prompt=True, ssh_keys=ssh_keys,
+        enable_password=enable_password)
     try:
       self._connection.Connect()
       self._DisablePager()

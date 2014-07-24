@@ -59,6 +59,10 @@ gflags.DEFINE_bool('devices_from_filenames', False,
                    'Use the configuration file names to determine the target '
                    'device.', short_name='d')
 
+gflags.DEFINE_bool('enable', False,
+                   'Use if target devices require an enable password.',
+                   short_name='e')
+
 gflags.DEFINE_string('vendor', '', 'A vendor name. Must be one of the '
                      'implementations in this directory',
                      short_name='V')
@@ -90,8 +94,8 @@ class UsageError(Error):
 
 
 class PushThread(threading.Thread):
-  def __init__(
-      self, task_queue, output_queue, error_queue, vendor_class, password):
+  def __init__( self, task_queue, output_queue, error_queue, vendor_class,
+               password, enable=None):
     """Initiator.
 
     Args:
@@ -106,6 +110,7 @@ class PushThread(threading.Thread):
                    error string from caught exception.
       vendor_class: type; Vendor appropriate class to use for this push.
       password: str; Password to use for devices (username is set in FLAGS).
+      enable: str; Optional enable password to use for devices.
     """
     threading.Thread.__init__(self)
     self._task_queue = task_queue
@@ -113,6 +118,7 @@ class PushThread(threading.Thread):
     self._error_queue = error_queue
     self._vendor_class = vendor_class
     self._password = password
+    self._enable = enable
 
 
   def run(self):
@@ -126,7 +132,8 @@ class PushThread(threading.Thread):
 
       # Connect.
       try:
-        device.Connect(username=FLAGS.user, password=self._password)
+        device.Connect(username=FLAGS.user, password=self._password,
+                       enable_password=self._enable)
       except exceptions.ConnectError as e:
         self._error_queue.put((target, e))
         continue
@@ -201,6 +208,7 @@ def CheckFlags(files, class_path):
 
 def main(argv):
   """Check flags and start the threaded push."""
+  logging.basicConfig(level=logging.DEBUG)
 
   files = FLAGS(argv)[1:]
 
@@ -246,9 +254,15 @@ def main(argv):
   else:
     passw = None
 
+  # An enable password is only required if the user specifies the enable flag.
+  if FLAGS.enable:
+    en = getpass.getpass('Enable:')
+  else:
+    en = None
+
   threads = []
   for _ in xrange(FLAGS.threads):
-    worker = PushThread(task_queue, output_queue, error_queue, pusher, passw)
+    worker = PushThread(task_queue, output_queue, error_queue, pusher, passw, en)
     threads.append(worker)
     worker.start()
 

@@ -151,6 +151,29 @@ class Connection(object):
     self.child = None
 
   def _MaybeFindPrompt(self):
+    """Enable if necessary, then perform prompt discovery if required."""
+    if self._enable_password:
+      # Enable before prompt discovery. Set a broad prompt expression.
+      password_sent = False
+      logging.debug('Enabling on %r', self._host)
+      self.child.sendline('enable')
+      while True:
+        i = self.child.expect(
+            [self._success, 'Password:', 'Bad secrets',
+             'Password:  timeout expired!'], timeout=10)
+        if i == 0:
+          # Found the prompt, we're enabled.
+          logging.debug('We are enabled')
+          break
+        elif i == 1 and not password_sent:
+          self.child.sendline(self._enable_password)
+          logging.debug('Sent enable password to %r', self._host)
+          password_sent = True
+        else:
+          logging.debug('Got index %d back from expect', i)
+          # Sleep momentarily before expecting again, break buffer swap races.
+          time.sleep(0.05)
+
     if self._find_prompt:
       try:
         self._prompt = self._find_prompt_prefix + re.escape(
@@ -160,6 +183,9 @@ class Connection(object):
       except IndexError:
         logging.debug('%s: find_prompt set but no capture group - skipping',
                       self._host)
+    else:
+      self.re_prompt = re.compile(self._success)
+
 
 
 class SocketSpawn(pexpect.spawn):
@@ -370,7 +396,7 @@ class HpSshSpawn(SshSpawn):
   def _Filter(self, text):
     text = re.sub(self.NEWLINE_RE, '\n', text)
     text = re.sub(self.ANSI_RE, '', text)
-    logging.vlog(4, 'Filtered: %r', text)
+    logging.debug('Filtered: %r', text)
     return text
 
   def read_nonblocking(self, size=1, timeout=None):
@@ -391,8 +417,7 @@ class HpSshSpawn(SshSpawn):
     while True:
       if timeout and time.time() > start + timeout:
         return ''
-      in_data = SshSpawn.read_nonblocking(self, size=size, timeout=timeout)
-      logging.vlog(4, 'Unfiltered: %r', in_data)
+      logging.debug('Unfiltered: %r', in_data)
       if in_data and self._read_nonblocking_buf:
         logging.debug('Prepending data: %r', self._read_nonblocking_buf)
         in_data = self._read_nonblocking_buf + in_data
@@ -517,7 +542,7 @@ class HpSshFilterConnection(ParamikoSshConnection):
     try:
       # Login.
       while True:
-        logging.vlog(3, 'Expecting prompt %r', self._prompt)
+        logging.debug('Expecting prompt %r', self._prompt)
         compiled_regexes = self.child.compile_pattern_list(
             [self._prompt, r'Press any key to continue',
              'Password:', 'Invalid password',
@@ -526,17 +551,17 @@ class HpSshFilterConnection(ParamikoSshConnection):
         if i == 0:
           re_str = (re.escape(self.child.match.group(1)) +
                     r'(?:>|#) ')
-          logging.vlog(3, 'Prompt set to %r', re_str)
+          logging.debug('Prompt set to %r', re_str)
           self.re_prompt = re.compile(re_str)
           break
         elif i == 1:
-          logging.vlog(3, 'Pressing any key (space)')
+          logging.debug('Pressing any key (space)')
           self.child.send(' ')
         elif i == 2 and not password_sent:
           # Send the password only once.
           try:
             self.child.sendline(self._password)
-            logging.vlog(3, 'Sent user password (again) to %r', self._host)
+            logging.debug('Sent user password (again) to %r', self._host)
             password_sent = True
           except (pexpect.TIMEOUT, pexpect.EOF) as e:
             self._ssh_client = None
@@ -550,7 +575,7 @@ class HpSshFilterConnection(ParamikoSshConnection):
 
       # Enable.
       password_sent = False
-      logging.vlog(3, 'Enabling for HP on %r', self._host)
+      logging.debug('Enabling for HP on %r', self._host)
       self.child.sendline('enable')
       while True:
         i = self.child.expect([self._prompt, 'Password:',
@@ -562,10 +587,10 @@ class HpSshFilterConnection(ParamikoSshConnection):
         elif i == 1 and not password_sent:
           if self._enable_password is not None:
             self.child.sendline(self._enable_password)
-            logging.vlog(3, 'Sent enable password to %r', self._host)
+            logging.debug('Sent enable password to %r', self._host)
           else:
             self.child.sendline(self._password)
-            logging.vlog(3, 'Sent user password to %r', self._host)
+            logging.debug('Sent user password to %r', self._host)
           password_sent = True
         elif i <= 3 and i < 5:
           logging.error('CONNECT_ERROR Incorrect user password on %r',
