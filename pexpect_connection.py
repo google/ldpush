@@ -122,7 +122,8 @@ class Connection(object):
 
   def __init__(self, host, username, password=None, success=None,
                connect_command=None, timeout=None, find_prompt=False,
-               enable_password=None, find_prompt_prefix=None):
+               enable_password=None, find_prompt_prefix=None,
+               find_prompt_suffix=''):
     """Initializer.
 
     Args:
@@ -148,6 +149,7 @@ class Connection(object):
     self._enable_password = enable_password
     self._find_prompt_prefix = (
         r'(?:^|\n)' if find_prompt_prefix is None else find_prompt_prefix)
+    self._find_prompt_suffix = find_prompt_suffix
     self.child = None
 
   def _MaybeFindPrompt(self):
@@ -175,14 +177,20 @@ class Connection(object):
           time.sleep(0.05)
 
     if self._find_prompt:
+      host = re.escape(self.child.match.group(1))
+      if len(self.child.match.groups()) > 1:
+        mode = re.escape(self.child.match.group(2))
+      else:
+        mode = ''
       try:
-        self._prompt = self._find_prompt_prefix + re.escape(
-            self.child.match.group(1))
+        self._prompt = (
+            self._find_prompt_prefix + host + self._find_prompt_suffix + mode)
         self.re_prompt = re.compile(self._prompt)
         logging.debug('%s: prompt set to %r', self._host, self._prompt)
       except IndexError:
         logging.debug('%s: find_prompt set but no capture group - skipping',
                       self._host)
+
     else:
       self.re_prompt = re.compile(self._success)
 
