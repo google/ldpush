@@ -500,12 +500,17 @@ class ParamikoSshConnection(Connection):
     except (exceptions.ConnectError, exceptions.AuthenticationError) as e:
       raise ConnectionError(str(e))
     # We are connected. Now set up pexpect.
+    logging.debug('SETTING UP PEXPECT')
     try:
       ssh_channel = self._ssh_client.invoke_shell()
+      logging.debug('INVOKED A SHELL')
       ssh_channel.set_combine_stderr(True)
+      logging.debug('COMBINED STDERR')
       self.child = self._spawn(ssh_channel, maxread=8192)
+      logging.debug('SPAWNED')
       timeout = max(1, self._connect_timeout)
       pattern = self.child.expect([self._success], timeout=timeout)
+      logging.debug('GOT PATTERN: %s', pattern)
       if pattern == 0:
         self._MaybeFindPrompt()
     except pexpect.TIMEOUT:

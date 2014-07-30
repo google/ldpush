@@ -49,7 +49,7 @@ gflags.DEFINE_float('hp_timeout_act_user', None,
                    'HP device user activation timeout in seconds.')
 
 
-class HpProCurveDevice(base_device.BaseDevice):
+class HpDevice(base_device.BaseDevice):
   """A base device model for Hewlett-Packard ProCurve switches."""
 
   RE_INVALID = re.compile(r'^(Invalid|Ambiguous) input:', re.I | re.M)
@@ -58,7 +58,7 @@ class HpProCurveDevice(base_device.BaseDevice):
 
   def __init__(self, **kwargs):
     self.vendor_name = 'hp'
-    super(HpProCurveDevice, self).__init__(**kwargs)
+    super(HpDevice, self).__init__(**kwargs)
 
     # The response regexp indicating connection success.
     self._success = r'ProCurve .*[Ss]witch'
