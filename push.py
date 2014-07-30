@@ -209,7 +209,6 @@ def CheckFlags(files, class_path):
 
 def main(argv):
   """Check flags and start the threaded push."""
-  logging.basicConfig(level=logging.DEBUG)
   files = FLAGS(argv)[1:]
 
   # Vendor implementations must be named correctly, i.e. IosDevice.
