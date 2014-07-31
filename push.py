@@ -46,7 +46,6 @@ import paramiko_device
 # pylint: enable-msg=W0611
 import push_exceptions as exceptions
 
-
 FLAGS = gflags.FLAGS
 
 gflags.DEFINE_list('targets', '', 'A comma separated list of target devices.',
@@ -85,6 +84,9 @@ gflags.DEFINE_integer('threads', 20, 'Number of push worker threads.',
 gflags.DEFINE_bool('verbose', False,
                    'Display full error messages.', short_name='v')
 
+FORMAT = "%(asctime)-15s:%(levelname)s:%(filename)s:%(module)s:%(lineno)d %(message)s"
+logging.basicConfig(format=FORMAT)
+logging.basicConfig(filename='/tmp/push.log')
 
 class Error(Exception):
   """Base exception class."""
@@ -150,6 +152,11 @@ class PushThread(threading.Thread):
               canary=FLAGS.canary)
         except exceptions.SetConfigError as e:
           self._error_queue.put((target, e))
+          # If the config change attempt hits an error, bail out of the
+          # threads here, otherwise the thread will exception below on
+          # response.transcript, since response is undefined at this point.
+          logging.warn('SetConfig failed for %s, exiting thread.', target)
+          break
         self._output_queue.put((target, response.transcript))
 
       device.Disconnect()
