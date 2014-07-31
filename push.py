@@ -156,7 +156,7 @@ class PushThread(threading.Thread):
           # threads here, otherwise the thread will exception below on
           # response.transcript, since response is undefined at this point.
           logging.warn('SetConfig failed for %s, exiting thread.', target)
-          break
+          continue
         self._output_queue.put((target, response.transcript))
 
       device.Disconnect()
