@@ -140,8 +140,7 @@ class JunosDevice(paramiko_device.ParamikoDevice):
       if any(error in line for line in lines):
         break
     else:
-      # No special "error" string found, check for "commit complete". b/9750034
-      # and Junos bug PR799925.
+      # No special "error" string found, check for "commit complete".
       if expect_commit and all(
           'commit complete' not in line for line in lines):
         raise exceptions.SetConfigError(
@@ -445,7 +444,7 @@ class JunosDevice(paramiko_device.ParamikoDevice):
       # (more important) exception on the remote delete, raise the local delete
       # exception.
       #
-      # pylint is confused by the re-raising <http://b/5683453>
+      # pylint is confused by the re-raising
       # pylint: disable=raising-bad-type
       if local_delete_exception is not None:
         raise local_delete_exception

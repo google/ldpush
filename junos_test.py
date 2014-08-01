@@ -144,7 +144,7 @@ class JunosTest(unittest.TestCase):
     self.assertIsNone(
         test_function(warning_output, expect_config_check=False,
                       expect_commit=True))
-    # Also a successful commit from a switch-type device - b/10202762.
+    # Also a successful commit from a switch-type device.
     output = textwrap.dedent("""\
         Entering configuration mode
         |load complete
@@ -202,8 +202,6 @@ class JunosTest(unittest.TestCase):
     self.assertRaises(
         exceptions.SetConfigError,
         test_function, '+description "syntax error";\nerror:')
-    # This is nearly-real output from b/7176238, including a message about a
-    # missing RE.
     syntax_error_with_missing_re = textwrap.dedent("""
         Entering configuration mode
         Users currently editing the configuration:

@@ -376,7 +376,7 @@ class AsaDevice(base_device.BaseDevice):
       if pindex == 1:
         self.connected = False
         raise exceptions.ConnectError('terminal length 0 command denied.')
-      # Pause momentarily to avoid a TAC+ packet drop. See b/1890881.
+      # Pause momentarily to avoid a TAC+ packet drop.
       time.sleep(0.5)
     except (pexpect.EOF, pexpect.TIMEOUT) as e:
       self.connected = False
