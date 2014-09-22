@@ -39,10 +39,10 @@ gflags.DEFINE_float('ciscoxr_timeout_act_user', None,
                    'CiscoXR device user activation timeout in seconds.')
 
 # pylint: disable=arguments-differ
-# 38:CiscoXrDevice._Cmd: Arguments number differs from overridden method.
+# 38:CiscoxrDevice._Cmd: Arguments number differs from overridden method.
 
 
-class CiscoXrDevice(paramiko_device.ParamikoDevice):
+class CiscoxrDevice(paramiko_device.ParamikoDevice):
   """A base device model suitable for CiscoXR devices.
 
   See the base_device.BaseDevice method docstrings.
@@ -50,12 +50,12 @@ class CiscoXrDevice(paramiko_device.ParamikoDevice):
 
   def __init__(self, **kwargs):
     self.vendor_name = 'ciscoxr'
-    super(CiscoXrDevice, self).__init__(**kwargs)
+    super(CiscoxrDevice, self).__init__(**kwargs)
 
   def _Cmd(self, command, mode=None):
     """CiscoXR wrapper for ParamikoDevice._Cmd()."""
 
-    result = super(CiscoXrDevice, self)._Cmd(command, mode)
+    result = super(CiscoxrDevice, self)._Cmd(command, mode)
     if result.endswith("% Invalid input detected at '^' marker.\r\n"):
       raise exceptions.CmdError('Invalid input: %s' % command)
     if result.endswith('% Bad hostname or protocol not running\r\n'):
