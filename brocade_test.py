@@ -18,6 +18,7 @@
 import unittest
 import brocade
 import fake_ssh_connection
+import push_exceptions as exceptions
 
 
 class BrocadeMlxDeviceTest(unittest.TestCase):
@@ -43,6 +44,7 @@ class BrocadeTiDeviceTest(unittest.TestCase):
 
   def setUp(self):
     cli_prompt = 'SSH@cdzncsa1switch#'
+    configure_prompt = 'SSH@cdzncsa1switch(config)#\r\n'
     config_snippet = """\r
 Current configuration:\r
 !\r
@@ -76,6 +78,11 @@ end
     # Commands and responses from the perspective of the device.
     command_response_dict = {
         '__logged_in__': cli_prompt,
+        'configure terminal': configure_prompt,
+        'hostname xxx': configure_prompt,
+        'end': cli_prompt,
+        'wr mem': cli_prompt,
+        'exit': cli_prompt,
         'skip-page-display\r': 'Disable page display mode\r\n%s' % cli_prompt,
         'show running-config\r': config_snippet}
     ssh_client = fake_ssh_connection.FakeSshClient(command_response_dict)

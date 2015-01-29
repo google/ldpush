@@ -98,6 +98,7 @@ class BrocadeDevice(base_device.BaseDevice):
       'exit',
   )
 
+  verboten_config = ('quit',)
   disable_pager_command = ''
 
   def __init__(self, **kwargs):
@@ -178,6 +179,96 @@ class BrocadeDevice(base_device.BaseDevice):
       raise exceptions.CmdError(result)
     return result
 
+  # Details about per-line necessity for FI/TI can be found at go/brocadepush.
+  def _SetConfig(self, unused_destination_file, data, canary):
+    """Upload config to a Brocade router (TI/FI).
+
+    Args:
+      unused_destination_file: Unused.
+      data: A string, the data to copy to destination_file.
+      canary: A boolean, if True, only canary check the configuration, don't
+        apply it.
+
+    Returns:
+      A base_device.SetConfigResult.
+      Transcript of any device interaction that occurred during the _SetConfig.
+
+    Raises:
+      exceptions.CmdError: An error occurred inside the call to _Cmd.
+    """
+    # Canarying is not supported on BROCADE.
+    if canary:
+      raise exceptions.SetConfigCanaryingError('%s devices do not support '
+                                               'configuration canarying.' %
+                                               self.vendor_name)
+    # The result object.
+    result = base_device.SetConfigResult()
+    # Check for a connection to the Brocade.
+    if not self._GetConnected():
+      raise exceptions.SetConfigError('Cannot use unless already '
+                                      'connected to the device.')
+
+    # Derive our config prompt from the discovered prompt.
+    self._connection.config_prompt = re.compile(
+        self._connection.re_prompt.pattern[:-2] + r'\(config\S*\)'
+        + self._connection.re_prompt.pattern[-2:])
+
+    # Enter config mode.
+    self._connection.child.send('configure terminal\r')
+    self._connection.child.expect('\r\n', timeout=self.timeout_response)
+    self._connection.child.expect(self._connection.config_prompt,
+                                  timeout=self.timeout_response,
+                                  searchwindowsize=128)
+    def SendAndWait(command):
+      """Sends a command and waits for a response.
+
+      Args:
+        command: str; A single config line.
+
+      Returns:
+        A string; the last response.
+
+      Raises:
+        exceptions.SetConfigError: When we unexpectedly exit configuration mode
+          while setting config.
+      """
+      self._connection.child.send(command+'\r')
+      self._connection.child.expect('\r\n', timeout=self.timeout_response)
+      pindex = self._connection.child.expect(
+          [self._connection.config_prompt, self._connection.re_prompt],
+          timeout=self.timeout_response, searchwindowsize=128)
+      # We unexpectedly exited config mode. Too many exits or ctrl-z.
+      if pindex == 1:
+        raise exceptions.SetConfigError(
+            'Unexpectedly exited config mode after line: %s' % command)
+      return self._connection.child.before.replace('\r\n', os.linesep)
+
+    lines = [x.strip() for x in data.splitlines()]
+    # Remove any 'end' lines. Multiple ends could be bad.
+    lines = [line for line in lines if line != 'end']
+
+    for line in lines:
+      if next((line
+               for prefix in self.verboten_config
+               if line.startswith(prefix)), False):
+        raise exceptions.CmdError(
+            'Command %s is not permitted on Brocade devices.' % line)
+      if line:
+        line_result = SendAndWait(line)
+        if (line_result.startswith('Invalid input -> ') or
+            line_result == 'Not authorized to execute this command.\n'):
+          raise exceptions.CmdError('Command failed: %s' % line_result)
+
+    self._connection.child.send('end\r')
+    self._connection.child.expect(self._connection.re_prompt,
+                                  timeout=self.timeout_act_user)
+    self._connection.child.send('wr mem\r')
+    self._connection.child.expect(self._connection.re_prompt,
+                                  timeout=self.timeout_act_user)
+    self._Disconnect()
+    result.transcript = 'SetConfig applied the file successfully.'
+    return result
+
   def _GetConnected(self):
     """Returns the connected state."""
     if not (hasattr(self, '_connection') and
@@ -204,7 +295,10 @@ class BrocadeDevice(base_device.BaseDevice):
         self._connection.child.expect(self._connection.exit_list,
                                       timeout=self.timeout_act_user)
         self.connected = False
-      except (pexpect.EOF, pexpect.TIMEOUT), e:
+      # EOF is normal for a disconnect. Skip DisconnectError.
+      except (pexpect.EOF), e:
+        self.connected = False
+      except (pexpect.TIMEOUT), e:
         self.connected = False
         raise exceptions.DisconnectError('%s: %s' % (e.__class__, str(e)))
 

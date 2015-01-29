@@ -19,9 +19,6 @@ This module implements the base device interface of base_device.py for
 Cisco NX-OS devices.
 """
 
-__author__ = 'mijith@google.com (Mijith)'
-
-
 import gflags
 
 import paramiko_device

@@ -19,8 +19,6 @@ This module implements the base device interface of base_device.py for
 Hewlett-Packard ProCurve Ethernet switches.
 """
 
-__author__ = 'afort@google.com (Andreux Fort)'
-
 import os
 import re
 

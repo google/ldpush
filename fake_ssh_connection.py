@@ -21,6 +21,11 @@ unit test for clients based on pexpect_client.ParamikoSshConnection.
 The classes FakeChannel and FakeTransport are substitutes for their paramiko
 counterparts Channel and Transport.
 """
+import re
+import socket
+import time
+
+
 # pylint: disable=g-bad-name
 class Error(Exception):
   pass
@@ -43,11 +48,29 @@ class FakeTransport(object):
 class FakeChannel(object):
   """A fake channel class for unit test purposes."""
 
-  def __init__(self, command_response_dict):
-    self.command_response_dict = command_response_dict
+  def __init__(self, command_response_dict, exact=True):
+    """Initialize FakeChannel.
+
+    Args:
+      command_response_dict: A dict, where if d[sent] defines how to respond
+        to sent. d[sent] can be either a str, a list of str or a callable
+        which will be called to create the response. If the response
+        is a list, each entry is returned on this and subsequent calls of recv.
+      exact: a bool, If True, treat sent as a string rather than a regexp.
+    """
+    self.command_responses = []
+    for receive_re, send_gen in command_response_dict.iteritems():
+      if exact:
+        receive_re = re.escape(receive_re)
+      if not callable(send_gen):
+        # send_gen() = send_gen
+        send_gen = (lambda(s): lambda: s)(send_gen)
+      self.command_responses.append((re.compile(receive_re), send_gen))
     self.transport = FakeTransport()
     self.timeout = None
     self.last_sent = '__logged_in__'
+    self.sent = []
+    self.extras = []
 
   def set_combine_stderr(self, unused_arg):
     pass
@@ -62,23 +85,45 @@ class FakeChannel(object):
     self.timeout = timeout
 
   def recv(self, unused_size):
-    if self.last_sent:
+    """Respond to what was last sent."""
+    if self.extras:
+      return self.extras.pop(0)
+    if self.last_sent is not None:
       last_sent = self.last_sent
       self.last_sent = None
-      if last_sent in self.command_response_dict:
-        return self.command_response_dict[last_sent]
-      else:
-        raise FakeChannelError('unknown input %r' % last_sent)
+      for pattern, response in self.command_responses:
+        if pattern.match(last_sent):
+          responses = response()
+          if isinstance(responses, list):
+            self.extras = responses[1:]
+            return responses[0]
+          return responses
+      raise FakeChannelError('unknown input %r' % last_sent)
+    time.sleep(self.timeout)
+    raise socket.timeout('fake timeout')
 
   def send(self, command):
     self.last_sent = command
+    self.sent.append(command)
 
 
 class FakeSshClient(object):
   """A fake SSH client class for unit test purposes."""
 
-  def __init__(self, command_response_dict):
-    self.channel = FakeChannel(command_response_dict)
+  def __init__(self, command_response_dict, exact=True):
+    """Initialises a FakeSshClient.
+
+    Args:
+      command_response_dict: A dict, where the values are either strings
+        or parameter-free callables returning a string and the keys
+        are regular expressions.
+      exact: A boolean, If True, the keys above are plain strings.
+
+    A fake ssh that matches sent data defined by the keys
+    in command_response_dict and responds with the corresponding string value.
+    """
+
+    self.channel = FakeChannel(command_response_dict, exact)
 
   def Connect(self, **unused_kwargs):
     return self
