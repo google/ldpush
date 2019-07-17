@@ -17,7 +17,7 @@
 
 import cStringIO as StringIO
 import push_exceptions as exceptions
-import gflags
+from absl import flags as gflags
 import mox
 import paramiko_device
 import time

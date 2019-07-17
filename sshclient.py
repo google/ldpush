@@ -17,7 +17,7 @@
 
 import cStringIO
 import push_exceptions as exceptions
-import gflags
+from absl import flags as gflags
 import logging
 import paramiko
 import socket
@@ -33,6 +33,10 @@ gflags.DEFINE_boolean('use_ssh_agent',
                       False,
                       'Use a local ssh-agent to get key material for '
                       'authentication attempts.')
+
+gflags.DEFINE_string('key',
+                     None,
+                     'Use this specific key')
 
 FLAGS = gflags.FLAGS
 
@@ -236,6 +240,7 @@ def Connect(hostname, username, password=None, port=22, ssh_keys=(),
                            password=password,
                            pkey=pkey,
                            timeout=timeout,
+                           key_filename=FLAGS.key,
                            allow_agent=FLAGS.use_ssh_agent,
                            look_for_keys=False)
         break
