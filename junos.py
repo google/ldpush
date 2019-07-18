@@ -28,7 +28,7 @@ import threading
 
 import paramiko
 
-import gflags
+from absl import flags as gflags
 import logging
 
 import base_device

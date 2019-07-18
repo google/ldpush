@@ -20,7 +20,7 @@ CiscoXR devices.
 """
 
 
-import gflags
+from absl import flags as gflags
 
 import paramiko_device
 import push_exceptions as exceptions

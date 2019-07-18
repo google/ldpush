@@ -29,7 +29,8 @@ import socket
 import sys
 import threading
 
-import gflags
+from absl import app
+from absl import flags as gflags
 import progressbar
 
 # Eval is used for building vendor objects.
@@ -81,8 +82,6 @@ gflags.DEFINE_string('suffix', '', 'Append suffix onto each target provided.',
 gflags.DEFINE_integer('threads', 20, 'Number of push worker threads.',
                       short_name='t')
 
-gflags.DEFINE_bool('verbose', False,
-                   'Display full error messages.', short_name='v')
 
 FORMAT = "%(asctime)-15s:%(levelname)s:%(filename)s:%(module)s:%(lineno)d %(message)s"
 logging.basicConfig(format=FORMAT)
@@ -316,4 +315,4 @@ def main(argv):
 
 
 if __name__ == '__main__':
-  main(sys.argv)
+  app.run(main)

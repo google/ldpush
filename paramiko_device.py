@@ -21,7 +21,7 @@ methods you wish to implement. Others will return an NotImplemented Exception.
 """
 
 import time
-import gflags
+from absl import flags as gflags
 import logging
 
 import paramiko

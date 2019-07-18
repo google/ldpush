@@ -24,7 +24,8 @@ NotSupportedError will potentially be raised.
 """
 
 import time
-import gflags
+#import gflags
+from absl import flags as gflags
 import push_exceptions as exceptions
 import logging
 

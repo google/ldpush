@@ -27,10 +27,11 @@ import select
 import socket
 import time
 
-import paramiko
+#import paramiko
+from absl import flags as gflags
 import pexpect
 
-import gflags
+from absl import flags as gflags
 import logging
 
 import sshclient

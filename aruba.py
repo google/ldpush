@@ -23,7 +23,8 @@ import os
 
 import pexpect
 
-import gflags
+#import gflags
+from absl import flags as gflags
 import logging
 
 import base_device
